@@ -14,6 +14,7 @@ import {
 import { Button } from './ui/button'
 import { Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
+import { useState } from 'react'
 
 interface BillingFormProps {
   subscriptionPlan: Awaited<
@@ -26,19 +27,30 @@ const BillingForm = ({
 }: BillingFormProps) => {
   const { toast } = useToast()
 
-  const { mutate: createStripeSession, isLoading } =
-    trpc.createStripeSession.useMutation({
-      onSuccess: ({ url }) => {
-        if (url) window.location.href = url
-        if (!url) {
-          toast({
-            title: 'There was a problem...',
-            description: 'Please try again in a moment',
-            variant: 'destructive',
-          })
-        }
-      },
-    })
+  // State variable to track loading state
+  const [isMutating, setIsMutating] = useState(false)
+
+  const handleStripeSession = async () => {
+    try {
+      setIsMutating(true) // Set loading state to true before mutation
+
+      await trpc.createStripeSession.useMutation({
+        // ... other options
+      })
+
+      // Handle success
+    } catch (error) {
+      // Handle errors
+      console.error('Error creating Stripe session:', error)
+      toast({
+        title: 'An error occurred',
+        description: 'Please try again later',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsMutating(false) // Set loading state to false after mutation
+    }
+  }
 
   return (
     <MaxWidthWrapper className='max-w-5xl'>
@@ -46,8 +58,9 @@ const BillingForm = ({
         className='mt-12'
         onSubmit={(e) => {
           e.preventDefault()
-          createStripeSession()
-        }}>
+          handleStripeSession()
+        }}
+      >
         <Card>
           <CardHeader>
             <CardTitle>Subscription Plan</CardTitle>
@@ -58,8 +71,9 @@ const BillingForm = ({
           </CardHeader>
 
           <CardFooter className='flex flex-col items-start space-y-2 md:flex-row md:justify-between md:space-x-0'>
-            <Button type='submit'>
-              {isLoading ? (
+            <Button type='submit' disabled={isMutating}>
+              {/* Conditionally render loader based on isMutating */}
+              {isMutating ? (
                 <Loader2 className='mr-4 h-4 w-4 animate-spin' />
               ) : null}
               {subscriptionPlan.isSubscribed
@@ -72,10 +86,7 @@ const BillingForm = ({
                 {subscriptionPlan.isCanceled
                   ? 'Your plan will be canceled on '
                   : 'Your plan renews on'}
-                {format(
-                  subscriptionPlan.stripeCurrentPeriodEnd!,
-                  'dd.MM.yyyy'
-                )}
+                {format(subscriptionPlan.stripeCurrentPeriodEnd!, 'dd.MM.yyyy')}
                 .
               </p>
             ) : null}
