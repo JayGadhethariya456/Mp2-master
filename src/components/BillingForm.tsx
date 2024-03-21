@@ -1,76 +1,62 @@
 'use client'
 
-import { getUserSubscriptionPlan } from '@/lib/stripe'
-import { useToast } from './ui/use-toast'
-import { trpc } from '@/app/_trpc/client'
-import MaxWidthWrapper from './MaxWidthWrapper'
+import { useState } from 'react'; // Import useState hook
+import { getUserSubscriptionPlan } from '@/lib/stripe';
+import { useToast } from './ui/use-toast';
+import { trpc } from '@/app/_trpc/client';
+import MaxWidthWrapper from './MaxWidthWrapper';
 import {
   Card,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
-} from './ui/card'
-import { Button } from './ui/button'
-import { Loader2 } from 'lucide-react'
-import { format } from 'date-fns'
-import { useState } from 'react'
+} from './ui/card';
+import { Button } from './ui/button';
+import { Loader2 } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface BillingFormProps {
   subscriptionPlan: Awaited<
     ReturnType<typeof getUserSubscriptionPlan>
-  >
+  >;
 }
 
 const BillingForm = ({
   subscriptionPlan,
 }: BillingFormProps) => {
-  const { toast } = useToast()
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false); // State to manage loading
 
-  // State variable to track loading state
-  const [isMutating, setIsMutating] = useState(false)
+  const { mutate: createStripeSessionMutation } =
+    trpc.createStripeSession.useMutation();
 
-  const handleStripeSession = async () => {
+  const handleMutate = async () => {
+    setIsLoading(true); // Set loading state to true before mutation
     try {
-      setIsMutating(true) // Set loading state to true before mutation
-
-      await trpc.createStripeSession.useMutation({
-        onSuccess: ({ url }) => {
-          if (url) window.location.href = url
-          if (!url) {
-            toast({
-              title: 'There was a problem...',
-              description: 'Please try again in a moment',
-              variant: 'destructive',
-            })
-          }
-        },
-        // ... other options
-      })
-
-      // Handle success
+      await createStripeSessionMutation(); // Call the mutation function
+      // If mutation succeeds, redirect
+      window.location.href = 'redirect-url';
     } catch (error) {
-      // Handle errors
-      console.error('Error creating Stripe session:', error)
+      console.error('Error creating stripe session:', error);
       toast({
-        title: 'An error occurred',
-        description: 'Please try again later',
+        title: 'Error',
+        description: 'An error occurred. Please try again later.',
         variant: 'destructive',
-      })
+      });
     } finally {
-      setIsMutating(false) // Set loading state to false after mutation
+      setIsLoading(false); // Set loading state to false after mutation
     }
-  }
+  };
 
   return (
     <MaxWidthWrapper className='max-w-5xl'>
       <form
         className='mt-12'
         onSubmit={(e) => {
-          e.preventDefault()
-          handleStripeSession()
-        }}
-      >
+          e.preventDefault();
+          handleMutate(); // Call custom mutation handler
+        }}>
         <Card>
           <CardHeader>
             <CardTitle>Subscription Plan</CardTitle>
@@ -81,9 +67,8 @@ const BillingForm = ({
           </CardHeader>
 
           <CardFooter className='flex flex-col items-start space-y-2 md:flex-row md:justify-between md:space-x-0'>
-            <Button type='submit' disabled={isMutating}>
-              {/* Conditionally render loader based on isMutating */}
-              {isMutating ? (
+            <Button type='submit' disabled={isLoading}>
+              {isLoading ? (
                 <Loader2 className='mr-4 h-4 w-4 animate-spin' />
               ) : null}
               {subscriptionPlan.isSubscribed
@@ -96,7 +81,10 @@ const BillingForm = ({
                 {subscriptionPlan.isCanceled
                   ? 'Your plan will be canceled on '
                   : 'Your plan renews on'}
-                {format(subscriptionPlan.stripeCurrentPeriodEnd!, 'dd.MM.yyyy')}
+                {format(
+                  subscriptionPlan.stripeCurrentPeriodEnd!,
+                  'dd.MM.yyyy'
+                )}
                 .
               </p>
             ) : null}
@@ -104,7 +92,7 @@ const BillingForm = ({
         </Card>
       </form>
     </MaxWidthWrapper>
-  )
-}
+  );
+};
 
-export default BillingForm
+export default BillingForm;
