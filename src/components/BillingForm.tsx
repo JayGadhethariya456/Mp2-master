@@ -16,7 +16,11 @@ import { Button } from './ui/button';
 import { Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
-interface BillingFormProps {}
+interface BillingFormProps {
+  subscriptionPlan: Awaited<
+  ReturnType<typeof getUserSubscriptionPlan>
+>
+}
 
 const BillingForm = (props: BillingFormProps) => {
   const { toast } = useToast();
