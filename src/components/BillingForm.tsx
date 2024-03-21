@@ -36,7 +36,7 @@ const BillingForm = ({
     try {
       await createStripeSessionMutation(); // Call the mutation function
       // If mutation succeeds, redirect
-      window.location.href = 'redirect-url';
+      window.location.href = '/dashboard';
     } catch (error) {
       console.error('Error creating stripe session:', error);
       toast({
