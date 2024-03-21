@@ -16,12 +16,12 @@ interface BillingFormProps {
     >
 }
 
-type MutationStatus = 'success' | 'error' | 'idle' | 'pending' | 'loading';
+
 
 const BillingForm = ({ subscriptionPlan }: BillingFormProps) => {
     const { toast } = useToast()
 
-    const { mutate: createStripeSession, status: MutationStatus } = trpc.createStripeSession.useMutation({
+    const { mutate: createStripeSession} = trpc.createStripeSession.useMutation({
         onSuccess: ({ url }) => {
             if (url) window.location.href = url
             if (!url) {
@@ -34,49 +34,46 @@ const BillingForm = ({ subscriptionPlan }: BillingFormProps) => {
         }
     })
 
-    const isFetching: boolean = status === 'loading';
+    return(
+    <MaxWidthWrapper>
+        <form
+            className='mt-12'
+            onSubmit={(e) => {
+                e.preventDefault()
+                createStripeSession()
+            }}>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Subscription Plan</CardTitle>
+                    <CardDescription>
+                        You are currently on the{' '}
+                        <strong>{subscriptionPlan.name}</strong> plan.
+                    </CardDescription>
+                </CardHeader>
 
-    return (
-        <MaxWidthWrapper>
-            <form
-                className='mt-12'
-                onSubmit={(e) => {
-                    e.preventDefault()
-                    createStripeSession()
-                }}>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Subscription Plan</CardTitle>
-                        <CardDescription>
-                            You are currently on the{' '}
-                            <strong>{subscriptionPlan.name}</strong> plan.
-                        </CardDescription>
-                    </CardHeader>
+                <CardFooter className='flex flex-col items-start space-y-2 md:flex-row md:justify-between md:space-x-0'>
+                    <Button type='submit'>
+                        {subscriptionPlan.isSubscribed
+                            ? 'Manage Subscription'
+                            : 'Upgrade to PRO'}
+                    </Button>
 
-                    <CardFooter className='flex flex-col items-start space-y-2 md:flex-row md:justify-between md:space-x-0'>
-                // ... in your JSX
-                        <Button type='submit' disabled={isFetching}>
-                            {isFetching ? (
-                                <Loader2 className="animate-spin h-5 w-5 mr-3" />
-                            ) : subscriptionPlan.isSubscribed ? 'Manage Subscription' : 'Upgrade to PRO'}
-                        </Button>
-
-                        {subscriptionPlan.isSubscribed ? (
-                            <p className='rounded-full text-xs font-medium'>
-                                {subscriptionPlan.isCanceled
-                                    ? 'Your plan will be canceled on '
-                                    : 'Your plan renews on'}
-                                {format(
-                                    subscriptionPlan.stripeCurrentPeriodEnd!,
-                                    'dd.MM.yyyy'
-                                )}
-                                .
-                            </p>
-                        ) : null}
-                    </CardFooter>
-                </Card>
-            </form>
-        </MaxWidthWrapper>
+                    {subscriptionPlan.isSubscribed ? (
+                        <p className='rounded-full text-xs font-medium'>
+                            {subscriptionPlan.isCanceled
+                                ? 'Your plan will be canceled on '
+                                : 'Your plan renews on'}
+                            {format(
+                                subscriptionPlan.stripeCurrentPeriodEnd!,
+                                'dd.MM.yyyy'
+                            )}
+                            .
+                        </p>
+                    ) : null}
+                </CardFooter>
+            </Card>
+        </form>
+    </MaxWidthWrapper>
     )
 }
 
