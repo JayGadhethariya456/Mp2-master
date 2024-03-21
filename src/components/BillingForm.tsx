@@ -35,6 +35,16 @@ const BillingForm = ({
       setIsMutating(true) // Set loading state to true before mutation
 
       await trpc.createStripeSession.useMutation({
+        onSuccess: ({ url }) => {
+          if (url) window.location.href = url
+          if (!url) {
+            toast({
+              title: 'There was a problem...',
+              description: 'Please try again in a moment',
+              variant: 'destructive',
+            })
+          }
+        },
         // ... other options
       })
 
