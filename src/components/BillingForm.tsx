@@ -1,6 +1,5 @@
-'use client'
-
-import { useState } from 'react'; // Import useState hook
+"use client"
+import { useState } from 'react';
 import { getUserSubscriptionPlan } from '@/lib/stripe';
 import { useToast } from './ui/use-toast';
 import { trpc } from '@/app/_trpc/client';
@@ -17,9 +16,7 @@ import { Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface BillingFormProps {
-  subscriptionPlan: Awaited<
-    ReturnType<typeof getUserSubscriptionPlan>
-  >;
+  subscriptionPlan: Awaited<ReturnType<typeof getUserSubscriptionPlan>>;
 }
 
 const BillingForm = ({
@@ -29,25 +26,29 @@ const BillingForm = ({
   const [isLoading, setIsLoading] = useState(false); // State to manage loading
 
   const { mutate: createStripeSessionMutation } =
-    trpc.createStripeSession.useMutation();
-
-  const handleMutate = async () => {
-    setIsLoading(true); // Set loading state to true before mutation
-    try {
-      await createStripeSessionMutation(); // Call the mutation function
-      // If mutation succeeds, redirect
-      window.location.href = 'redirect-url';
-    } catch (error) {
-      console.error('Error creating stripe session:', error);
-      toast({
-        title: 'Error',
-        description: 'An error occurred. Please try again later.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false); // Set loading state to false after mutation
-    }
-  };
+    trpc.createStripeSession.useMutation({
+      onSuccess: ({ url }) => {
+        setIsLoading(false); // Reset loading state
+        if (url) {
+          window.location.href = url; // Redirect if URL is provided
+        } else {
+          toast({
+            title: 'Error',
+            description: 'An error occurred. Please try again later.',
+            variant: 'destructive',
+          });
+        }
+      },
+      onError: (error) => {
+        setIsLoading(false); // Reset loading state
+        console.error('Error creating stripe session:', error);
+        toast({
+          title: 'Error',
+          description: 'An error occurred. Please try again later.',
+          variant: 'destructive',
+        });
+      },
+    });
 
   return (
     <MaxWidthWrapper className='max-w-5xl'>
@@ -55,7 +56,8 @@ const BillingForm = ({
         className='mt-12'
         onSubmit={(e) => {
           e.preventDefault();
-          handleMutate(); // Call custom mutation handler
+          setIsLoading(true); // Set loading state to true before mutation
+          createStripeSessionMutation(); // Call the mutation function
         }}>
         <Card>
           <CardHeader>
